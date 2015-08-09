@@ -3,6 +3,8 @@
 #include "libnfc.h"
 #include "usbserial.h"
 
+//uint8_t main_menu;
+
 
 void packet_init(PN532_Packet * pkt, uint8_t reserved, uint8_t tfi)
 {
@@ -243,7 +245,7 @@ void get_firmware_version(void)
 }
 
 /* libnfc START */
-void loop_libnfc_rfid(void)
+void loop_libnfc_rfid(uint8_t *menu)
 {
 	int t, count, res;
 	uint8_t data, *p;
@@ -260,7 +262,7 @@ void loop_libnfc_rfid(void)
 	/* run RFID loop */
 	t = 0;
 	while (1) {
-        if ( LIBNFC != main_menu) { break; }
+        if ( LIBNFC != *menu) { break; }
 
 		if (!GPIOGetValue(PN532_IRQ_PORT, PN532_IRQ_PIN)) {
 			GPIOSetValue(LED_PORT, LED_BIT, (t++) & 1);

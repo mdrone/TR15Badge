@@ -8,8 +8,6 @@
 #define CLONE   0
 #define LIBNFC  1
 
-extern uint8_t main_menu;
-
 typedef enum {
 	STATE_IDLE = 0,
 	STATE_PREFIX = -1,
@@ -41,6 +39,6 @@ int packet_put(PN532_Packet * pkt, uint8_t data);
 void dump_packet(uint8_t * data, int count);
 void rfid_hexdump(const void *buffer, int size);
 void get_firmware_version(void);
-void loop_libnfc_rfid(void);
+void loop_libnfc_rfid(uint8_t *menu);
 
 #endif/*__LIBNFC_H__*/

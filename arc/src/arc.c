@@ -3,6 +3,7 @@
 #include "arc.h"
 #include "libnfc.h"
 
+
 uint8_t mifare_card[MIFARE_CARD_SIZE];
 
 uint8_t default_keys[][MIFARE_KEY_SIZE] = 
@@ -22,7 +23,6 @@ uint8_t default_keys[][MIFARE_KEY_SIZE] =
     {0xca, 0x0f, 0xb8, 0x30, 0x93, 0xc6}, 
     {0xfe, 0x39, 0xef, 0x4d, 0x55, 0xe1},
     {0xd3, 0xf7, 0xd3, 0xf7, 0xd3, 0xf7}, // NFCForum content key
-    {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, // Blank key
     {0xb0, 0xb1, 0xb2, 0xb3, 0xb4, 0xb5},
     {0x4d, 0x3a, 0x99, 0xc3, 0x51, 0xdd},
     {0x1a, 0x98, 0x2c, 0x7e, 0x45, 0x9a},
@@ -31,7 +31,8 @@ uint8_t default_keys[][MIFARE_KEY_SIZE] =
     {0x58, 0x7e, 0xe5, 0xf9, 0x35, 0x0f},
     {0xa0, 0x47, 0x8c, 0xc3, 0x90, 0x91},
     {0x53, 0x3c, 0xb6, 0xc7, 0x23, 0xf6},
-    {0x8f, 0xd0, 0xa4, 0xf2, 0x56, 0xe9}
+    {0x8f, 0xd0, 0xa4, 0xf2, 0x56, 0xe9},
+    {0x00, 0x00, 0x00, 0x00, 0x00, 0x00} // Blank key
     };
 
 uint8_t access_bytes[ACCESS_BYTES] = 
@@ -67,7 +68,7 @@ int mifare_reader_init(uint8_t *data, uint8_t size)
 void dump_mifare_card (void)
 {
     for (uint8_t i = 0; i < BLOCKS; i++) {
-        debug_printf("Block: %2d", i);
+        debug_printf("Block %2d:", i);
         rfid_hexdump(&mifare_card[i*BLOCK_SIZE], BLOCK_SIZE);
     }
 }
@@ -127,7 +128,7 @@ int mifare_write_block(uint8_t *data, uint8_t size, uint8_t block)
 }
 
 
-void loop_clone_rfid(void (*f)(void))
+void loop_clone_rfid(uint8_t *menu, uint8_t *opmode)
 {
     uint8_t data[80];
     uint8_t keyindex = 0;
@@ -138,10 +139,11 @@ void loop_clone_rfid(void (*f)(void))
 	get_firmware_version();
 
     while (block < BLOCKS) {
-        if ( READ != main_menu) { break; }
+        if ( READ != *menu) { break; }
         res = mifare_reader_init(data, sizeof(data));
 
         if (tries >= KEYS) {
+            tries = 0;
             block += 1;
         }
 
@@ -173,7 +175,7 @@ void loop_clone_rfid(void (*f)(void))
                         debug_printf("Auth Succeeded.\n");
                         tries = 0;
 
-                        switch (submenu) {
+                        switch (*opmode) {
                             case READ:
                                 res = mifare_read_block(data, sizeof(data), block);
 
@@ -200,9 +202,6 @@ void loop_clone_rfid(void (*f)(void))
                                 rfid_hexdump(&res, sizeof(res));
                             break;
                         }
-                        if (BLOCKS-1 == block) {
-                            status = 1;
-                        }
                         block += 1;
                     } else if (0x41 == data[0] && 0x14 == data[1]) {
                         debug_printf("Auth Failed.\n");
@@ -211,11 +210,9 @@ void loop_clone_rfid(void (*f)(void))
                     }
                 }
             }
+        } else {
+            turn_rf_off(data, sizeof(data));
         }
-        turn_rf_off(data, sizeof(data));
     }
-    if (0x01 == status) {
-        (*f)();
-    }
-    main_menu = LIBNFC;
+    *menu = LIBNFC;
 }

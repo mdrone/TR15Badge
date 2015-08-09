@@ -9,13 +9,12 @@
 #define ACCESS_BYTES        4
 #define KEYS                24
 
+#define CLONE   0
+
 #define READ    0
 #define WRITE   1
 
-extern uint8_t submenu;
-extern uint8_t status;
-
-void loop_clone_rfid(void (*f)(void));
+void loop_clone_rfid(uint8_t *menu, uint8_t *opmode);
 void dump_mifare_card(void);
 
 #endif/*__ARC_H__*/

@@ -1,39 +1,17 @@
 #include <openbeacon.h>
+#include "LPC13xx.h"
 #include "iap.h"
 #include "rfid.h"
 #include "usbserial.h"
 #include "libnfc.h"
 #include "arc.h"
 
-uint8_t main_menu = LIBNFC;
-uint8_t submenu = READ;
-uint8_t status = 0; /* 1: finished */
+extern uint8_t main_menu;// = LIBNFC;
+extern uint8_t mode;// = READ;
+//extern volatile uint8_t status;// = 0; /* 1: finished */
 
-/* Set and Handle Interrupts */
-void WAKEUP_IRQHandlerPIO2_0(void)
-{
-	debug_printf("Menu (Pressed 2_0)\n");
-	/* Clear pending IRQ */
-	LPC_SYSCON->STARTRSRP0CLR = STARTxPRP0_PIO2_0;
-	main_menu = CLONE;
-	if (0x01 == status) {
-	    submenu = WRITE;
-    }
-}
+extern uint32_t clock_1s;
 
-void WAKEUP_IRQHandlerPIO0_1(void)
-{
-    debug_printf("Profile (Pressed 0_1)\n");
-    LPC_SYSCON->STARTRSRP0CLR = STARTxPRP0_PIO0_1;
-    dump_mifare_card();
-}
-
-void WAKEUP_IRQHandlerPIO1_0(void)
-{
-    debug_printf("OK (Pressed 1_0)\n");
-    LPC_SYSCON->STARTRSRP0CLR = STARTxPRP0_PIO1_0;
-	main_menu = LIBNFC;
-}
 
 void ButtonInit(void)
 {
@@ -71,23 +49,6 @@ void LEDInit(void)
 	GPIOSetValue(1, 1, LED_OFF);
 }
 
-void LED_finished(void)
-{
-    for (uint8_t i = 0; i < 10; i++) {
-        pmu_wait_ms(50);
-        GPIOSetValue(0, 7, LED_OFF);
-        GPIOSetValue(1, 10, LED_OFF);
-        GPIOSetValue(1, 1, LED_OFF);
-        pmu_wait_ms(50);
-        GPIOSetValue(0, 7, LED_ON);
-        GPIOSetValue(1, 10, LED_ON);
-        GPIOSetValue(1, 1, LED_ON);
-    }
-    GPIOSetValue(0, 7, LED_OFF);
-    GPIOSetValue(1, 10, LED_OFF);
-    GPIOSetValue(1, 1, LED_OFF);
-}
-
 int main(void)
 {
 
@@ -97,6 +58,8 @@ int main(void)
 	ButtonInit();
 
     LEDInit();
+
+    SysTick_Config(SystemCoreClock/100);
 
 	/* UART setup */
 	UARTInit(115200, 0);
@@ -126,13 +89,16 @@ int main(void)
 	debug_printf ("What Test?\n");
 	debug_printf ("... the Debuginterfacetest\n");
 
+    main_menu = LIBNFC;
+    mode = READ;
+
     while (1) {
         switch (main_menu) {
             case LIBNFC:
-                loop_libnfc_rfid();
+                loop_libnfc_rfid(&main_menu);
                 break;
             case CLONE:
-                loop_clone_rfid(LED_finished);
+                loop_clone_rfid(&main_menu, &mode);
                 break;
         }
     }

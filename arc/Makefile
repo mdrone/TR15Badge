@@ -10,6 +10,7 @@ APP_LDFLAGS=-lm
 APP_SRC= \
   src/main.c \
   src/arc.c \
+  src/irq.c \
   src/libnfc.c \
   src/usbserial.c
 
